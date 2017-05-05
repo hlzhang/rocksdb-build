@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+while IFS='' read -r LINE
+do
+    echo "$LINE" \
+        | grep -Ev "^/Applications/Xcode.app/Contents/Developer/usr/bin/gcc " \
+        | grep -Ev "^/Library/Developer/CommandLineTools/usr/bin/make " \
+        | grep -Ev "^install " \
+        | grep -Ev "^link " \
+        | grep -Ev "^perl" \
+        | grep -Ev "^.+\.html$" \
+        | grep -Ev "^.+/android-toolchain-.+/bin/.+-linux-.+-gcc "
+done

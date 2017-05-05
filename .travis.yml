@@ -1,0 +1,100 @@
+# see: http://lint.travis-ci.org
+
+language: cpp
+
+before_cache:
+- rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -rf $HOME/.gradle/caches/*/plugin-resolution/
+
+before_install:
+- echo before_install
+- brew update
+- brew install aria2 bash
+# see: https://caskroom.github.io/
+- brew tap caskroom/cask
+#- brew cask install android-sdk
+- brew cask install android-ndk
+- ls -l /usr/local/opt/android-ndk/
+- curl https://sh.rustup.rs -sSf | sh -s -- -y
+#- ls -l $HOME/.cargo/bin
+#- rustup target list
+#- export PATH="$PATH:$HOME/.cargo/bin"
+#- echo PATH=$PATH
+#- rustup toolchain install stable-x86_64-apple-darwin
+#- rustup target add i686-apple-darwin
+#- rustup target add aarch64-linux-android
+#- rustup target add arm-linux-androideabi
+#- rustup target add armv7-linux-androideabi
+#- rustup target add i686-linux-android
+#- rustup target add aarch64-apple-ios
+#- rustup target add armv7-apple-ios
+#- rustup target add armv7s-apple-ios
+#- rustup target add i386-apple-ios
+#- rustup target add x86_64-apple-ios
+
+branches:
+  only:
+  - master
+  - /^release\/.*$/
+  - /^v\d+\.\d+(\.\d+)?(-\S*)?/
+
+cache:
+  directories:
+  - $HOME/.cargo
+  - $HOME/.gradle/caches/
+  - $HOME/.gradle/wrapper/
+  - $HOME/.android/build-cache
+  - $HOME/Library/Caches/Homebrew
+
+env:
+  global:
+  - LIB_NAME="rocksdb-f201a44"
+  - RUST_AND_ARCHS="aarch64-linux-android arm-linux-androideabi armv7-linux-androideabi i686-linux-android"
+  - RUST_IOS_ARCHS="aarch64-apple-ios armv7-apple-ios armv7s-apple-ios i386-apple-ios x86_64-apple-ios"
+  matrix:
+  - AND_ARCHS="" IOS_ARCHS=""
+  - AND_ARCHS="android" IOS_ARCHS=""
+  - AND_ARCHS="android-armeabi" IOS_ARCHS=""
+  #- AND_ARCHS="android-mips" IOS_ARCHS=""
+  - AND_ARCHS="android-x86" IOS_ARCHS=""
+  - AND_ARCHS="android64" IOS_ARCHS=""
+  - AND_ARCHS="android64-aarch64" IOS_ARCHS=""
+  - AND_ARCHS="" IOS_ARCHS="arm64"
+  - AND_ARCHS="" IOS_ARCHS="armv7"
+  - AND_ARCHS="" IOS_ARCHS="armv7s"
+  - AND_ARCHS="" IOS_ARCHS="i386"
+  - AND_ARCHS="" IOS_ARCHS="x86_64"
+
+install: true
+
+#matrix:
+#  exclude:
+
+os:
+- osx
+
+osx_image: xcode8.3
+
+script:
+- echo script
+- (./build.sh)
+- echo $(pwd)
+- export PATH="$PATH:$HOME/.cargo/bin"
+#- cargo build --target=arm-linux-androideabi
+
+before_deploy:
+- export RELEASE_PKG_FILE=$(ls target/rocksdb-f201a44-*.tar.gz)
+- echo "deploying $RELEASE_PKG_FILE to GitHub releases"
+deploy:
+  provider: releases
+  api_key: $GITHUB_GIT_SERVICE_TOKEN
+  file_glob: true
+  #file: target/rocksdb-f201a44-*.tar.gz
+  file: "${RELEASE_PKG_FILE}"
+  skip_cleanup: true
+  on:
+    tags: true
+after_deploy:
+- echo "deploy $RELEASE_PKG_FILE done"
+
+compiler: clang

@@ -59,11 +59,12 @@ env:
   - AND_ARCHS="android-x86" IOS_ARCHS=""
   - AND_ARCHS="android64" IOS_ARCHS=""
   - AND_ARCHS="android64-aarch64" IOS_ARCHS=""
-  - AND_ARCHS="" IOS_ARCHS="arm64"
-  - AND_ARCHS="" IOS_ARCHS="armv7"
-  - AND_ARCHS="" IOS_ARCHS="armv7s"
-  - AND_ARCHS="" IOS_ARCHS="i386"
-  - AND_ARCHS="" IOS_ARCHS="x86_64"
+  #- AND_ARCHS="" IOS_ARCHS="arm64"
+  #- AND_ARCHS="" IOS_ARCHS="armv7"
+  #- AND_ARCHS="" IOS_ARCHS="armv7s"
+  #- AND_ARCHS="" IOS_ARCHS="i386"
+  #- AND_ARCHS="" IOS_ARCHS="x86_64"
+  - AND_ARCHS="" IOS_ARCHS="arm64 armv7 armv7s i386 x86_64"
 
 install: true
 

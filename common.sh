@@ -55,6 +55,12 @@ fi
 
 FILTER="${SCRIPT_PATH}/filter"
 
+function prefix() {
+    local LIB_NAME="$1"
+    local TARGET="$2"
+    echo "$(pwd)/target/${LIB_NAME}-${TARGET}"
+}
+
 function package() {
     local target_dir="${1}"
     local lib_name="${2}"

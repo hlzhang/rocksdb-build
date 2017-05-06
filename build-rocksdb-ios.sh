@@ -89,6 +89,7 @@ function  configure_make() {
     rm -rf "target/${LIB_NAME}"
     mkdir -p "target/${LIB_NAME}"
     unzip-strip "target/${ARCHIVE}" "target/${LIB_NAME}"
+    patch < ../../rocksdb_534.patch
 
     echo "IOS_ARCH: ${ARCH} $(pwd)"
 

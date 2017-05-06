@@ -7,7 +7,7 @@ source common.sh
 # build-${LIB_NAME}-darwin.sh
 if [ -z "${AND_ARCHS}" ] && [ -z "${IOS_ARCHS}" ]; then
     brew tap chshawkn/homebrew-brew-tap
-    brew install chshawkn/brew-tap/$(echo ${LIB_NAME} | awk -F- '{print $1}')_${LIB_VERSION}
+    brew install chshawkn/brew-tap/$(echo ${LIB_NAME} | awk -F- '{print $1}')@${LIB_VERSION}
 
     if [ -d target/${LIB_NAME}-x86_64-apple-darwin ]; then rm -rf target/${LIB_NAME}-x86_64-apple-darwin; fi
     mkdir -p target/${LIB_NAME}-x86_64-apple-darwin

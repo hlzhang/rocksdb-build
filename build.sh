@@ -11,7 +11,7 @@ if [ -z "${AND_ARCHS}" ] && [ -z "${IOS_ARCHS}" ]; then
 
     if [ -d target/${LIB_NAME}-x86_64-apple-darwin ]; then rm -rf target/${LIB_NAME}-x86_64-apple-darwin; fi
     mkdir -p target/${LIB_NAME}-x86_64-apple-darwin
-    cp -r /usr/local/Cellar/$(echo ${LIB_NAME} | awk -F- '{print $1}')_${LIB_VERSION}/${LIB_VERSION}/*target/${LIB_NAME}-x86_64-apple-darwin/
+    cp -r /usr/local/Cellar/$(echo ${LIB_NAME} | awk -F- '{print $1}')@${LIB_VERSION}/${LIB_VERSION}/* target/${LIB_NAME}-x86_64-apple-darwin/
 
     rm -f "target/${LIB_NAME}-x86_64-apple-darwin.tar.gz"
     # create archive by package function

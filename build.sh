@@ -4,21 +4,6 @@ set -e
 
 source common.sh
 
-function package() {
-    local target_dir="${1}"
-    local lib_name="${2}"
-    local artifact_dirs=($(find ${target_dir} -mindepth 1 -maxdepth 1 -type d | awk -F "${target_dir}/" '{print $2}' | grep "${lib_name}-"))
-    for artifact_dir in "${artifact_dirs[@]}"; do
-        echo "package: ${artifact_dir} into ${artifact_dir}.tar.gz"
-        tar czf "${artifact_dir}.tar.gz" "${artifact_dir}"
-    done
-}
-
-mkdir -p target
-[ -f "target/${ARCHIVE}" ] || aria2c --file-allocation=none -c -x 10 -s 10 -m 0 --console-log-level=notice --log-level=notice --summary-interval=0 -d "$(pwd)/target" -o "${ARCHIVE}" "${ARCHIVE_URL}"
-
-#brew install libtool autoconf automake
-
 # build-${LIB_NAME}-darwin.sh
 if [ -z "${AND_ARCHS}" ] && [ -z "${IOS_ARCHS}" ]; then
     brew tap chshawkn/homebrew-brew-tap
@@ -35,7 +20,6 @@ fi
 
 unset CXX
 unset CC
-ORIGINAL_PATH="${PATH}"
 
 AND_ARCHS_ARRAY=(${AND_ARCHS})
 for ((i=0; i < ${#AND_ARCHS_ARRAY[@]}; i++))
@@ -46,9 +30,11 @@ do
 
     unset TARGET_ARCH
     unset CFLAGS
+    unset CXXFLAGS
     unset NDK_PLATFORM_COMPAT
     unset ARCH
     unset HOST_COMPILER
+    unset TARGET_OS
 
     AND_ARCH="${AND_ARCHS_ARRAY[i]}"
     echo "AND_ARCH: ${AND_ARCH} $(pwd)"
@@ -111,43 +97,67 @@ do
         export ARCH=""
         export HOST_COMPILER=""
     fi
+    export CXXFLAGS="${CFLAGS}"
 
-    if [ -z "${NDK_PLATFORM}" ]; then
-        export NDK_PLATFORM="android-22"
-    fi
-    if [ -z "${ANDROID_NDK_HOME}" ]; then
-        export ANDROID_NDK_HOME="/usr/local/opt/android-ndk/android-ndk-r14b"
-    fi
+    #if [ -z "${NDK_PLATFORM}" ]; then export NDK_PLATFORM="android-22"; fi
+    if [ -z "${ANDROID_NDK_HOME}" ]; then export ANDROID_NDK_HOME="/usr/local/opt/android-ndk/android-ndk-r14b"; fi
 
     export TOOLCHAIN_DIR="$(pwd)/target/android-toolchain-${TARGET_ARCH}"
     export PATH="${TOOLCHAIN_DIR}/bin:${TOOLCHAIN_DIR}/libexec:${ORIGINAL_PATH}"
     export PREFIX="$(pwd)/target/${LIB_NAME}-android-${TARGET_ARCH}"
 
-    make_android_toolchain
+    make_android_toolchain "false"
     install_gflags
     install_snappy
     install_lz4
 
     cd target/${LIB_NAME}
-    #(${SCRIPT_PATH}/android-build.sh | ${FILTER} || cat config.log)
+
+    export CC="${HOST_COMPILER}-clang"
+    export CXX="${HOST_COMPILER}-clang++"
+    export SYSROOT="${TOOLCHAIN_DIR}/sysroot"
+    export CFLAGS="${CFLAGS} -DROCKSDB_LITE=1 --sysroot=${SYSROOT}"
+    export CXXFLAGS="${CFLAGS} -std=c++11"
+    #EXTRA_C/CXXFLAGS, PLATFORM_C/CXXCFLAGS
+
+    echo "CXX: ${CXX}"
+    echo "CFLAGS: ${CFLAGS}"
+
+    export LIBNAME="librocksdb_lite"
+    export PORTABLE=1
+    # for build_tools/build_detect_platform
+    export TARGET_OS="OS_ANDROID_CROSSCOMPILE"
+    # util/posix_logger.h: FALLOC_FL_KEEP_SIZE problem
+
+    # Makefile
+    #$(info $$CFLAGS is [${CFLAGS}])
+    #$(info $$CXXFLAGS is [${CXXFLAGS}])
+    #$(info $$PLATFORM is [${PLATFORM}])
+
+    echo "make clean"
+    make clean
+    echo "make static_lib"
+    make -j4 static_lib
+    echo "make shared_lib"
+    make -j4 shared_lib
+    echo "make install"
+    INSTALL_PATH="${PREFIX}" make install
 
     unset TOOLCHAIN_DIR
     export PATH="${ORIGINAL_PATH}"
 
-    cd ../
-    #rm -rf ${LIB_NAME}-${RUST_AND_ARCH}
-    #mkdir -p ${LIB_NAME}-${RUST_AND_ARCH}
-    #cp -r ${LIB_NAME}/$(echo ${LIB_NAME} | awk -F- '{print $1}')-android-${TARGET_ARCH}/* ${LIB_NAME}-${RUST_AND_ARCH}/
-    cd ../
+    cd ../../
 done
 
 unset TARGET_ARCH
 unset CMAKE_ARCH_ABI
 unset CFLAGS
+unset CXXFLAGS
 unset NDK_PLATFORM_COMPAT
 unset ARCH
 unset HOST_COMPILER
+unset TARGET_OS
 
 source build-$(echo ${LIB_NAME} | awk -F- '{print $1}')-ios.sh
 
-#(cd target; package "." "${LIB_NAME}"; ls -l .;)
+(cd target; package "." "${LIB_NAME}"; ls -l .;)

@@ -23,7 +23,7 @@ function  configure_make() {
     local SDK_VERSION=$2
 
     local CONFIGURE_HOST=""
-    local PLATFORM="iPhoneOS"
+    local IOS_SDK_PLATFORM="iPhoneOS"
 
     unset HOST_COMPILER
     unset CC
@@ -32,55 +32,56 @@ function  configure_make() {
     unset AR
     unset RANLIB
     unset CFLAGS
+    unset CXXFLAGS
     unset LDFLAGS
 
-    CFLAGS=""
-    LDFLAGS=""
+    IOS_CFLAGS=""
+    IOS_LDFLAGS=""
     local PREFIX="$(pwd)/target"
     if [[ "${ARCH}" == "arm64" ]]; then
-        CFLAGS="${CFLAGS} -O2 -arch arm64 -mios-version-min=${IOS_VERSION_MIN}"
-        LDFLAGS="${LDFLAGS} -arch arm64 -mios-version-min=${IOS_VERSION_MIN}"
+        IOS_CFLAGS="-O2 -arch arm64 -mios-version-min=${IOS_VERSION_MIN}"
+        IOS_LDFLAGS="-arch arm64 -mios-version-min=${IOS_VERSION_MIN}"
 
         PREFIX="${PREFIX}/${LIB_NAME}-aarch64-apple-ios"
         local CONFIGURE_HOST="arm-apple-darwin10"
-        IOS_PLATFORM="OS"
+        CMAKE_IOS_PLATFORM="OS"
     elif [[ "${ARCH}" == "armv7" ]]; then
-        CFLAGS="-O2 -mthumb -arch armv7 -mios-version-min=${IOS_VERSION_MIN}"
-        LDFLAGS="-mthumb -arch armv7 -mios-version-min=${IOS_VERSION_MIN}"
+        IOS_CFLAGS="-O2 -mthumb -arch armv7 -mios-version-min=${IOS_VERSION_MIN}"
+        IOS_LDFLAGS="-mthumb -arch armv7 -mios-version-min=${IOS_VERSION_MIN}"
 
         PREFIX="${PREFIX}/${LIB_NAME}-armv7-apple-ios"
         local CONFIGURE_HOST="arm-apple-darwin10"
-        IOS_PLATFORM="OS"
+        CMAKE_IOS_PLATFORM="OS"
     elif [[ "${ARCH}" == "armv7s" ]]; then
-        CFLAGS="-O2 -mthumb -arch armv7s -mios-version-min=${IOS_VERSION_MIN}"
-        LDFLAGS="-mthumb -arch armv7s -mios-version-min=${IOS_VERSION_MIN}"
+        IOS_CFLAGS="-O2 -mthumb -arch armv7s -mios-version-min=${IOS_VERSION_MIN}"
+        IOS_LDFLAGS="-mthumb -arch armv7s -mios-version-min=${IOS_VERSION_MIN}"
 
         PREFIX="${PREFIX}/${LIB_NAME}-armv7s-apple-ios"
         local CONFIGURE_HOST="arm-apple-darwin10"
-        IOS_PLATFORM="OS"
+        CMAKE_IOS_PLATFORM="OS"
     elif [[ "${ARCH}" == "i386" ]]; then
-        CFLAGS="-O2 -arch i386 -mios-simulator-version-min=${IOS_SIMULATOR_VERSION_MIN}"
-        LDFLAGS="-arch i386 -mios-simulator-version-min=${IOS_SIMULATOR_VERSION_MIN}"
+        IOS_CFLAGS="-O2 -arch i386 -mios-simulator-version-min=${IOS_SIMULATOR_VERSION_MIN}"
+        IOS_LDFLAGS="-arch i386 -mios-simulator-version-min=${IOS_SIMULATOR_VERSION_MIN}"
 
         PREFIX="${PREFIX}/${LIB_NAME}-i386-apple-ios"
         local CONFIGURE_HOST="i686-apple-darwin10"
 
-        PLATFORM="iPhoneSimulator"
-        IOS_PLATFORM="SIMULATOR"
+        IOS_SDK_PLATFORM="iPhoneSimulator"
+        CMAKE_IOS_PLATFORM="SIMULATOR"
     elif [[ "${ARCH}" == "x86_64" ]]; then
-        CFLAGS="-O2 -arch x86_64 -mios-simulator-version-min=${IOS_SIMULATOR_VERSION_MIN}"
-        LDFLAGS="-arch x86_64 -mios-simulator-version-min=${IOS_SIMULATOR_VERSION_MIN}"
+        IOS_CFLAGS="-O2 -arch x86_64 -mios-simulator-version-min=${IOS_SIMULATOR_VERSION_MIN}"
+        IOS_LDFLAGS="-arch x86_64 -mios-simulator-version-min=${IOS_SIMULATOR_VERSION_MIN}"
 
         PREFIX="${PREFIX}/${LIB_NAME}-x86_64-apple-ios"
         local CONFIGURE_HOST="x86_64-apple-darwin10"
 
-        PLATFORM="iPhoneSimulator"
-        IOS_PLATFORM="SIMULATOR64"
+        IOS_SDK_PLATFORM="iPhoneSimulator"
+        CMAKE_IOS_PLATFORM="SIMULATOR64"
     fi
 
-    export BASEDIR="${XCODEDIR}/Platforms/${PLATFORM}.platform/Developer"
-    export PATH="${BASEDIR}/usr/bin:$BASEDIR/usr/sbin:$PATH"
-    export SDK="${BASEDIR}/SDKs/${PLATFORM}.sdk"
+    export BASEDIR="${XCODEDIR}/Platforms/${IOS_SDK_PLATFORM}.platform/Developer"
+    export PATH="${BASEDIR}/usr/bin:${BASEDIR}/usr/sbin:${PATH}"
+    export SDK="${BASEDIR}/SDKs/${IOS_SDK_PLATFORM}.sdk"
 
     if [ -d "${PREFIX}" ]; then rm -fr "${PREFIX}"; fi
     mkdir -p ${PREFIX} || exit 1
@@ -92,28 +93,43 @@ function  configure_make() {
     echo "IOS_ARCH: ${ARCH} $(pwd)"
 
     export ARCH="${ARCH}"
-    export CFLAGS="${CFLAGS} -isysroot ${SDK}"
-    export LDFLAGS="${LDFLAGS} -isysroot ${SDK}"
-    export IOS_PLATFORM="${IOS_PLATFORM}"
+    export CFLAGS="${IOS_CFLAGS} -isysroot ${SDK}"
+    export LDFLAGS="${IOS_LDFLAGS} -isysroot ${SDK}"
+    export CMAKE_IOS_PLATFORM="${CMAKE_IOS_PLATFORM}"
     install_gflags
 
-    export HOST_COMPILER="${CONFIGURE_HOST}"
     export CC="clang ${CFLAGS}"
     export CXX="clang++ ${CFLAGS}"
     export LD="ld ${LDFLAGS}"
+    export HOST_COMPILER="${CONFIGURE_HOST}"
     install_snappy
     install_lz4
 
+    unset HOST_COMPILER
+    unset LD
+
     cd "target/${LIB_NAME}"
 
-#    ./configure --disable-shared --enable-static --disable-debug-mode \
-#    --host=${CONFIGURE_HOST} \
-#    --prefix="${PREFIX}" \
-#    LDFLAGS="$LDFLAGS -L${PREFIX}/lib" \
-#    CFLAGS="${CFLAGS} -I${PREFIX}/include" \
-#    CPPFLAGS="${CPPFLAGS} -I${PREFIX}/include"
-#
-#    make -j4 && make install && make clean
+    export CC="clang"
+    export CXX="clang++"
+    # rocksdb's Makefile control -arch
+    export CFLAGS="-DROCKSDB_LITE=1 -DIOS_CROSS_COMPILE"
+    #-std=c++11 -stdlib=libc++
+    export CXXFLAGS="${CFLAGS}"
+    export LDFLAGS=""
+
+    echo "CXX: ${CXX}"
+    echo "CFLAGS: ${CFLAGS}"
+
+    export LIBNAME="librocksdb_lite"
+    export PORTABLE=1
+    export TARGET_OS="IOS"
+    echo "make clean"
+    make clean
+    echo "make static_lib"
+    make -j4 static_lib
+    echo "make install"
+    INSTALL_PATH="${PREFIX}" make install
 
     cd ../../
 }
@@ -127,26 +143,26 @@ do
     fi
 done
 
-#if [[ $# -eq 0 && ${#IOS_ARCHS_ARRAY[@]} -eq 5 ]]; then
-#    # Create universal binary and include folder
-#    PREFIX="$(pwd)/target/${LIB_NAME}-universal-apple-ios"
-#    rm -fr -- "${PREFIX}/include" "${PREFIX}/librocksdb3.a" 2> /dev/null
-#    mkdir -p -- "${PREFIX}/lib"
-#    lipo -create \
-#      "$(pwd)/target/${LIB_NAME}-aarch64-apple-ios/lib/librocksdb3.a" \
-#      "$(pwd)/target/${LIB_NAME}-armv7-apple-ios/lib/librocksdb3.a" \
-#      "$(pwd)/target/${LIB_NAME}-armv7s-apple-ios/lib/librocksdb3.a" \
-#      "$(pwd)/target/${LIB_NAME}-i386-apple-ios/lib/librocksdb3.a" \
-#      "$(pwd)/target/${LIB_NAME}-x86_64-apple-ios/lib/librocksdb3.a" \
-#      -output "${PREFIX}/lib/librocksdb3.a"
-#    cp -r -- "$(pwd)/target/${LIB_NAME}-armv7-apple-ios/include" "${PREFIX}/"
-#
-#    echo
-#    echo "librocksdb3 has been installed into ${PREFIX}"
-#    echo
-#    file -- "${PREFIX}/lib/librocksdb3.a"
-#
-#    # Cleanup
-#    rm -rf -- "${PREFIX}/tmp"
-#    make distclean > /dev/null || echo No rule to make target
-#fi
+if [[ $# -eq 0 && ${#IOS_ARCHS_ARRAY[@]} -eq 5 ]]; then
+    # Create universal binary and include folder
+    PREFIX="$(pwd)/target/${LIB_NAME}-universal-apple-ios"
+    rm -fr -- "${PREFIX}/include" "${PREFIX}/librocksdb_lite.a" 2> /dev/null
+    mkdir -p -- "${PREFIX}/lib"
+    lipo -create \
+      "$(pwd)/target/${LIB_NAME}-aarch64-apple-ios/lib/librocksdb_lite.a" \
+      "$(pwd)/target/${LIB_NAME}-armv7-apple-ios/lib/librocksdb_lite.a" \
+      "$(pwd)/target/${LIB_NAME}-armv7s-apple-ios/lib/librocksdb_lite.a" \
+      "$(pwd)/target/${LIB_NAME}-i386-apple-ios/lib/librocksdb_lite.a" \
+      "$(pwd)/target/${LIB_NAME}-x86_64-apple-ios/lib/librocksdb_lite.a" \
+      -output "${PREFIX}/lib/librocksdb_lite.a"
+    cp -r -- "$(pwd)/target/${LIB_NAME}-armv7-apple-ios/include" "${PREFIX}/"
+
+    echo
+    echo "librocksdb_lite has been installed into ${PREFIX}"
+    echo
+    file -- "${PREFIX}/lib/librocksdb_lite.a"
+
+    # Cleanup
+    rm -rf -- "${PREFIX}/tmp"
+    make distclean > /dev/null || echo No rule to make target
+fi

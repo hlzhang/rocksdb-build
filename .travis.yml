@@ -48,7 +48,7 @@ cache:
 
 env:
   global:
-  - LIB_NAME="rocksdb-f201a44"
+  - LIB_NAME="rocksdb-5.3.4"
   - RUST_AND_ARCHS="aarch64-linux-android arm-linux-androideabi armv7-linux-androideabi i686-linux-android"
   - RUST_IOS_ARCHS="aarch64-apple-ios armv7-apple-ios armv7s-apple-ios i386-apple-ios x86_64-apple-ios"
   matrix:
@@ -83,13 +83,13 @@ script:
 #- cargo build --target=arm-linux-androideabi
 
 before_deploy:
-- export RELEASE_PKG_FILE=$(ls target/rocksdb-f201a44-*.tar.gz)
+- export RELEASE_PKG_FILE=$(ls target/rocksdb-5.3.4-*.tar.gz)
 - echo "deploying $RELEASE_PKG_FILE to GitHub releases"
 deploy:
   provider: releases
   api_key: $GITHUB_GIT_SERVICE_TOKEN
   file_glob: true
-  #file: target/rocksdb-f201a44-*.tar.gz
+  #file: target/rocksdb-5.3.4-*.tar.gz
   file: "${RELEASE_PKG_FILE}"
   skip_cleanup: true
   on:

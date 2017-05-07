@@ -5,9 +5,13 @@ do
     echo "$LINE" \
         | grep -Ev "^/Applications/Xcode.app/Contents/Developer/usr/bin/gcc " \
         | grep -Ev "^/Library/Developer/CommandLineTools/usr/bin/make " \
+        | grep -Ev "^clang" \
         | grep -Ev "^install " \
         | grep -Ev "^link " \
+        | grep -Ev "^lipo" \
+        | grep -Ev "^mkdir" \
         | grep -Ev "^perl" \
+        | grep -Ev "^xcrun" \
         | grep -Ev "^.+\.html$" \
         | grep -Ev "^.+/android-toolchain-.+/bin/.+-linux-.+-gcc "
 done

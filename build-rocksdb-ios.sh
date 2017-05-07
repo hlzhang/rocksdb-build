@@ -92,14 +92,14 @@ function  configure_make() {
     export CFLAGS="${IOS_CFLAGS} -isysroot ${SDK}"
     export LDFLAGS="${IOS_LDFLAGS} -isysroot ${SDK}"
     export CMAKE_IOS_PLATFORM="${CMAKE_IOS_PLATFORM}"
-    install_gflags
+    #install_gflags | ${FILTER}
 
     export CC="clang ${CFLAGS}"
     export CXX="clang++ ${CFLAGS}"
     export LD="ld ${LDFLAGS}"
     export HOST_COMPILER="${CONFIGURE_HOST}"
-    install_snappy
-    install_lz4
+    install_snappy | ${FILTER}
+    install_lz4 | ${FILTER}
 
     unset HOST_COMPILER
     unset LD
@@ -142,11 +142,11 @@ if [[ $# -eq 0 && ${#IOS_ARCHS_ARRAY[@]} -eq 5 ]]; then
     export PORTABLE=1
     export TARGET_OS="IOS"
     echo "make clean"
-    make clean
+    make clean | ${FILTER}
     echo "make static_lib"
-    make -j4 static_lib
+    make -j4 static_lib | ${FILTER}
     echo "make install"
-    INSTALL_PATH="${PREFIX}" make install
+    INSTALL_PATH="${PREFIX}" make install | ${FILTER}
 
     cd ../../
 fi

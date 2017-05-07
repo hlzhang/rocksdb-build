@@ -107,9 +107,9 @@ do
     export PREFIX="$(pwd)/target/${LIB_NAME}-android-${TARGET_ARCH}"
 
     make_android_toolchain "false"
-    install_gflags
-    install_snappy
-    install_lz4
+    install_gflags | ${FILTER}
+    install_snappy | ${FILTER}
+    install_lz4 | ${FILTER}
 
     cd target/${LIB_NAME}
 
@@ -135,13 +135,13 @@ do
     #$(info $$PLATFORM is [${PLATFORM}])
 
     echo "make clean"
-    make clean
+    make clean | ${FILTER}
     echo "make static_lib"
-    make -j4 static_lib
+    make -j4 static_lib | ${FILTER}
     echo "make shared_lib"
-    make -j4 shared_lib
+    make -j4 shared_lib | ${FILTER}
     echo "make install"
-    INSTALL_PATH="${PREFIX}" make install
+    INSTALL_PATH="${PREFIX}" make install | ${FILTER}
 
     unset TOOLCHAIN_DIR
     export PATH="${ORIGINAL_PATH}"
